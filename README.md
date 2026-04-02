@@ -25,15 +25,10 @@ Communication with the OpenCart database happens through a lightweight PHP bridg
 
 ## Features
 
-- **Bulk product sync** — Syncs all products from configured ERPNext categories to OpenCart in one run.
-- **Real-time webhook sync** — FastAPI server listens for ERPNext webhooks to add, update, or delete products instantly.
-- **Price sync** — Fetches the "Standard Selling" price from ERPNext and maps it to OpenCart.
-- **Quantity sync** — Calculates available stock across one or more ERPNext warehouses (`actual_qty – reserved_qty`).
-- **Category linking** — Automatically links products to their corresponding OpenCart categories.
-- **Multi-language support** — Inserts product descriptions into all configured OpenCart languages.
-- **SEO-friendly URLs** — Generates clean SEO keywords for each product automatically.
-- **Retry mechanism** — Each operation retries up to 4 times on failure.
-- **Logging** — All operations logged to `app.log` and console with colored output.
+- **Automated image sync** — Automatically downloads product images from ERPNext and uploads them to your OpenCart server via the PHP bridge.
+- **Telegram notifications** — Get instant logs and success/error reports directly to your Telegram account.
+- **Retry mechanism** — Each operation retries up to 4 times on failure for maximum reliability.
+- **Logging** — All operations logged to `logger.log` and console with colored output.
 
 ---
 
@@ -102,6 +97,8 @@ ERP_Opencart_sync_system/
 │   │
 │   └── utils/
 │       ├── db_utils.py           # Sends SQL queries to the PHP bridge
+│       ├── image_sync.py         # Downloads images and uploads via PHP bridge
+│       ├── telegram_notifier.py  # Sends logs and alerts to Telegram
 │       └── logger.py             # Logging configuration
 ```
 
@@ -199,7 +196,21 @@ DB_PREFIX="oc_"
 | `SECRET` | Must exactly match the `SECRET` inside `db_bridge.php`. | `"mYs3cr3tKey_ch4ngeMe"` |
 | `DB_PREFIX` | OpenCart database table prefix. Usually `oc_`. | `"oc_"` |
 
-### 2. ERP & OpenCart Settings (`app/config/settings.py`)
+### 2. Telegram Configuration (`.env`)
+
+To receive logs and error reports directly on your Telegram, add these variables to your `.env` file. You can get your `API_ID` and `API_HASH` from [my.telegram.org](https://my.telegram.org/).
+
+| Variable | Description | Example |
+|---|---|---|
+| `TELEGRAM_API_ID` | Your Telegram API ID from my.telegram.org. | `24958371` |
+| `TELEGRAM_API_HASH` | Your Telegram API Hash from my.telegram.org. | `"abc123d4e5f6g7h8i9j"` |
+| `TELEGRAM_PHONE_NUMBER`| The phone number associated with your Telegram. | `"+1234567890"` |
+| `TELEGRAM_SESSION_NAME`| The name of the session file (stored in project root).| `"log_session"` |
+| `TELEGRAM_RECEIPT_EMAIL`| The Telegram username or phone number to send logs to. | `"@MyUsername"` |
+
+> **Note:** The first time you run the system, it will ask you for a **login code** in the terminal to authorize the Telegram session. This only happens once.
+
+### 3. ERP & OpenCart Settings (`app/config/settings.py`)
 
 #### ERPNext Store Settings
 
@@ -231,7 +242,7 @@ opencart_settings = {
 
 Default stock status IDs: `5` = In Stock, `6` = 2-3 Days, `7` = Out of Stock, `8` = Pre-Order. Verify in your admin panel.
 
-### 3. Category Mapping (`app/config/category_configs.py`)
+### 4. Category Mapping (`app/config/category_configs.py`)
 
 Defines which ERPNext item groups are synced and maps them to OpenCart category names.
 
@@ -279,10 +290,12 @@ Console output: 🔵 Cyan = Fetching, 🟢 Green = Success, 🔴 Red = Error, �
 Starts a FastAPI server that listens for ERPNext webhook requests.
 
 ```bash
-python main.py
-```
-
 Server starts on `http://localhost:8000`. Then configure ERPNext webhooks (see [ERPNext Webhook Setup](#erpnext-webhook-setup) below).
+
+> **Tip:** If you are running this on a remote server, use `nohup` to keep the process running after you close the terminal:
+> ```bash
+> nohup python main.py > server.log 2>&1 &
+> ```
 
 ---
 
@@ -466,9 +479,22 @@ All endpoints require an `Authorization` header matching your `API_SECRET_KEY`.
 - ⚠️ The `.env` file must be in the project root (same level as `main.py`).
 - ⚠️ Categories must exist in OpenCart before syncing — the system does NOT create them.
 - ⚠️ The `SECRET` in `.env` must exactly match the `SECRET` in `db_bridge.php`.
-- ⚠️ Secure your `db_bridge.php` — it executes raw SQL. Use a strong secret and consider IP restrictions.
+- ⚠️ The `image/` directory on your OpenCart server must be **writable** (permissions `755` or `777`).
+- ⚠️ Secure your `db_bridge.php` — it executes raw SQL and handles file uploads. Use a strong secret.
 - Price synced is from the "Standard Selling" price list in ERPNext.
 - Product SKU in OpenCart = Item Code in ERPNext (unique identifier to match products).
+
+---
+
+## Technical Details: Image Syncing
+
+The system automatically detects product images in ERPNext. Here is how the sync works:
+1.  **Download**: The Python app downloads the image from ERPNext (or an external URL).
+2.  **Upload**: The image is sent via the `db_bridge.php` to your OpenCart server.
+3.  **Storage**: Images are saved in the `image/catalog/erp_sync/` directory.
+4.  **Database**: The product record in OpenCart is updated with the path `catalog/erp_sync/filename.jpg`.
+
+> **Note:** If an image with the same name already exists in the `erp_sync` folder, it will be overwritten.
 
 ---
 
