@@ -1,3 +1,8 @@
+
+
+visit this link to read the file better
+https://github.com/Marwan-badr543/ERP_Operncart_sync_system
+
 # ERPNext ↔ OpenCart Product Sync System
 
 A Python-based integration system that synchronizes products from ERPNext to OpenCart. Supports **bulk syncing** (all products at once) and **real-time webhook-based syncing** (add / update / delete individual products triggered by ERPNext events).
@@ -116,14 +121,7 @@ ERP_Opencart_sync_system/
 
 ## Installation
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/ERP_Opencart_sync_system.git
-cd ERP_Opencart_sync_system
-```
-
-### 2. Create a Virtual Environment
+### 1. Create a Virtual Environment
 
 ```bash
 # Windows
@@ -135,13 +133,13 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Set Up the PHP Bridge on Your OpenCart Server
+### 3. Set Up the PHP Bridge on Your OpenCart Server
 
 The `db_bridge.php` file acts as a secure middleman between this Python app and your OpenCart MySQL database.
 
