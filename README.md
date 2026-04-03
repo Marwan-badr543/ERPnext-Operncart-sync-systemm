@@ -2,6 +2,8 @@
 
 Available for purchase at Gumroad: https://marwanbadr.gumroad.com/l/jodzh
 
+📺 Watch the Full Live Demo on YouTube
+
 # ERPNext ↔ OpenCart Product Sync System
 
 A Python-based integration system that synchronizes products from ERPNext to OpenCart. Supports **bulk syncing** (all products at once) and **real-time webhook-based syncing** (add / update / delete individual products triggered by ERPNext events).
